@@ -61,18 +61,29 @@
     <!-- 거리 A/B -->
     <div class="flex flex-col">
       <label for="distA" class="mb-1 text-gray-700 font-medium">A 거리</label>
-      <input
-        id="distA"
-        type="number"
-        placeholder="숫자를 입력하세요"
-        class="px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500"
-        v-model="distA"
-        :disabled="distB > 0"
-      />
+      <div class="flex items-center space-x-2 w-full max-w-xs">
+        <input
+          id="distA"
+          type="number"
+          placeholder="숫자를 입력하세요"
+          class="px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+          v-model="distA"
+          :disabled="distB > 0"
+        />
+        <button
+          v-if="distA"
+          @click="distA = null"
+            class="ml-2 px-4 py-2 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-md shadow-md transition"
+        >
+          X
+        </button>
+      </div>
     </div>
+    
 
     <div class="flex flex-col">
       <label for="distB" class="mb-1 text-gray-700 font-medium">B 거리</label>
+      <div class="flex items-center space-x-2 w-full max-w-xs">
       <input
         id="distB"
         type="number"
@@ -81,6 +92,14 @@
         v-model="distB"
         :disabled="distA > 0"
       />
+      <button
+        v-if="distB"
+        @click="distB = null"
+          class="ml-2 px-4 py-2 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-md shadow-md transition"
+      >
+        X
+      </button>
+      </div>
     </div>
 
     <!-- 계산 버튼 -->
@@ -92,16 +111,17 @@
     </button>
 
     <!-- 결과 -->
-    <div class="text-gray-700 font-medium">결과:</div>
-    <div class="flex flex-col space-y-1 text-sm text-gray-800">
-      <div v-for="(data, index) in structures" :key="'s-' + index">
-        {{ index + 1 }}번 높이: {{ data }}
+    <div class="text-lg text-gray-800 font-medium">
+      <div class="flex flex-col space-y-1">
+        <div v-for="(data, index) in structures" :key="'s-' + index">
+          {{ index + 1 }}번 높이: {{ data }}
+        </div>
       </div>
-    </div>
 
-    <div class="flex flex-col space-y-1 text-sm text-gray-800">
-      <div v-for="(data, index) in structuresDist" :key="'d-' + index">
-        {{ String.fromCharCode('x'.charCodeAt(0) + index) }} 거리: {{ data }}
+      <div class="flex flex-col space-y-1">
+        <div v-for="(data, index) in structuresDist" :key="'d-' + index">
+          {{ String.fromCharCode('x'.charCodeAt(0) + index) }} 거리: {{ data }}
+        </div>
       </div>
     </div>
   </div>
@@ -109,7 +129,7 @@
   <!-- 모달 -->
   <div
     v-if="isModalOpen"
-    class="fixed inset-0 bg-black bg-opacity-30 backdrop-blur-sm flex justify-center items-center z-50 px-4"
+    class="fixed inset-0 backdrop-blur-sm flex justify-center items-center z-50 px-4"
   >
     <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-md">
       <h2 class="text-xl font-semibold mb-4">입력 확인</h2>
