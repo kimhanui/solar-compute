@@ -32,7 +32,51 @@
     </div>
 
     <div class="text-sm text-gray-600">
-      * [지붕각도+태양광각도+A] 또는 [지붕각도+태양광각도+B] 입력 시 [1~4번 기둥 높이, x,y,z] 계산
+      [A+B+지붕각도+태양광각도] 입력 시 [1~4번 높이, x,y,z] 계산
+    </div>
+
+    <!-- 거리 A/B -->
+    <div class="flex flex-col">
+      <label for="distA" class="mb-1 text-gray-700 font-medium">A 거리</label>
+      <div class="flex items-center w-full">
+        <input
+          id="distA"
+          type="number"
+          placeholder="숫자를 입력하세요"
+          class="flex-1 px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+          v-model="distA"
+        />
+          <!-- :disabled="distB > 0" -->
+        <!-- <button
+          v-if="distA"
+          @click="distA = null"
+            class="ml-2 px-4 py-2 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-md shadow-md transition"
+        >
+          X
+        </button> -->
+      </div>
+    </div>
+    
+
+    <div class="flex flex-col">
+      <label for="distB" class="mb-1 text-gray-700 font-medium">B 거리</label>
+      <div class="flex items-center w-full ">
+      <input
+        id="distB"
+        type="number"
+        placeholder="숫자를 입력하세요"
+        class="flex-1 px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+        v-model="distB"
+      />
+        <!-- :disabled="distA > 0" -->
+      <!-- <button
+        v-if="distB"
+        @click="distB = null"
+          class="ml-2 px-4 py-2 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-md shadow-md transition"
+      >
+        X
+      </button> -->
+      </div>
     </div>
 
     <!-- 각도 입력 -->
@@ -58,49 +102,6 @@
       />
     </div>
 
-    <!-- 거리 A/B -->
-    <div class="flex flex-col">
-      <label for="distA" class="mb-1 text-gray-700 font-medium">A 거리</label>
-      <div class="flex items-center w-full">
-        <input
-          id="distA"
-          type="number"
-          placeholder="숫자를 입력하세요"
-          class="flex-1 px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500"
-          v-model="distA"
-          :disabled="distB > 0"
-        />
-        <button
-          v-if="distA"
-          @click="distA = null"
-            class="ml-2 px-4 py-2 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-md shadow-md transition"
-        >
-          X
-        </button>
-      </div>
-    </div>
-    
-
-    <div class="flex flex-col">
-      <label for="distB" class="mb-1 text-gray-700 font-medium">B 거리</label>
-      <div class="flex items-center w-full ">
-      <input
-        id="distB"
-        type="number"
-        placeholder="숫자를 입력하세요"
-        class="flex-1 px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-        v-model="distB"
-        :disabled="distA > 0"
-      />
-      <button
-        v-if="distB"
-        @click="distB = null"
-          class="ml-2 px-4 py-2 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-md shadow-md transition"
-      >
-        X
-      </button>
-      </div>
-    </div>
 
     <!-- 계산 버튼 -->
     <button
@@ -119,7 +120,7 @@
       </div>
 
       <div class="flex flex-col space-y-1">
-        <div v-for="(data, index) in structuresDist" :key="'d-' + index">
+        <div v-for="(data, index) in roofs" :key="'d-' + index">
           {{ String.fromCharCode('x'.charCodeAt(0) + index) }} 거리: {{ data }}
         </div>
       </div>
@@ -151,13 +152,16 @@
   createApp({
     data() {
       return {
-        distA: null, // 밑변
-        distB: null, // 대각선
+        distA: null, // A거리(밑변)
+        distB: null, // B거리(대각선)
+      
         angleRoof: null, // 지붕 각도
         angleSolar: null, // 태양광 각도
-        structureCnt: 4, // 설치할 다리
-        structures: [], // 설치할 다리 높이
-        structuresDist: [], // 지붕각에서부터 n번째 다리까지 거리 x,y,z
+
+        structureCnt: 4, // 설치할 다리 개수
+        structures: [], // 1~4 높이
+        roofs: [], // x,y,z거리 
+        
         message: '', // 얼럿 메시지
         isModalOpen: false, // 모달
       }
@@ -165,7 +169,7 @@
     mounted() {
       console.log('Hello Workers!');
       this.structures = Array(this.structureCnt).fill(0);
-      this.structuresDist = Array(this.structureCnt - 1).fill(0);
+      this.roofs = Array(this.structureCnt - 1).fill(0);
     },
     methods:{
       compute() {
@@ -177,54 +181,45 @@
           this.openModal('지붕 각도를 입력하세요')
           return
         }
-        if(!(this.distA >0 || this.distB > 0)) {
-          this.openModal('A거리 또는 B거리를 입력하세요')
+        if(!(this.distA > 0 && this.distB > 0)) {
+          this.openModal('A, B거리를 입력하세요')
           return
         }
 
         const radians = this.angleRoof * (Math.PI / 180); // 도 → 라디안 변환
         const radiansSolar = this.angleSolar * (Math.PI / 180); // 도 → 라디안 변환
-
-        // A, B 구하기
-        if(this.distB > 0) {
-          this.distA = this.compute빗변_각도_밑변(this.distB, radians);
-        }
-        else if(this.distA > 0) {
-          this.distB = this.compute밑변_각도_빗변(this.distA, radians);
-        }
         
-        // 1번 구하기 (angleRoof)
-        this.structures[0] = this.compute빗변_각도_높이(this.distB, radians);
+        // 1번 구하기 (피타고라스 정리)
+        this.structures[0] = ( this.distB ** 2 - this.distA **2 ) ** 0.5 
 
         // 2번 구하기 (angleSolar)
-        this.structuresDist[0] = this.compute밑변_각도_빗변(this.distA, radiansSolar);
-        this.structures[1] = this.compute빗변_각도_높이(this.structuresDist[0], radiansSolar);
+        this.roofs[0] = this.compute밑변_각도_빗변(this.distA, radiansSolar);
+        this.structures[1] = this.compute밑변_각도_높이(this.roofs[0], radiansSolar);
        
         // 3번 구하기 (angleSolar)
-        const dit3 = this.compute밑변_각도_빗변(this.distA * 2, radiansSolar)
-        this.structuresDist[1] = dit3 - this.structuresDist[0];
-        this.structures[2] = this.compute빗변_각도_높이(dit3, radiansSolar)
+        const dit2 = this.compute밑변_각도_빗변(this.distA * 2, radiansSolar)
+        this.roofs[1] = dit2 - this.roofs[0];
+        this.structures[2] = this.compute밑변_각도_높이(dit2, radiansSolar)
    
         // 4번 구하기 (angleSolar)
-        const dit4 = this.compute밑변_각도_빗변(this.distA * 3, radiansSolar);
-        this.structuresDist[2] = dit4 - (this.structuresDist[0] + this.structuresDist[0]);
-        this.structures[3] = this.compute빗변_각도_높이(dit4, radiansSolar)
+        const dit3 = this.compute밑변_각도_빗변(this.distA * 3, radiansSolar);
+        this.roofs[2] = dit3 - (this.roofs[0] + this.roofs[1]);
+        this.structures[3] = this.compute밑변_각도_높이(dit3, radiansSolar) + this.structures[0]
       },
+
       compute빗변_각도_밑변(hypotenuse, radians) {
-        // const radians = angleDegrees * (Math.PI / 180); // 도 → 라디안
-        const adjacent = hypotenuse * Math.cos(radians);
-        return adjacent;
+        return hypotenuse * Math.cos(radians);
       },
       compute빗변_각도_높이(hypotenuse, radians) {
-        // const radians = angleDegrees * (Math.PI / 180); // 도 → 라디안
-        const opposite = hypotenuse * Math.sin(radians);
-        return opposite;
+        return hypotenuse * Math.sin(radians);
       },
       compute밑변_각도_빗변(adjacent, radians) {
-        // const radians = angleDegrees * (Math.PI / 180); // 도 → 라디안
-        const hypotenuse = adjacent / Math.cos(radians);
-        return hypotenuse;
+        return adjacent / Math.cos(radians);
       },
+      compute밑변_각도_높이(adjacent, radians) {
+        return adjacent * Math.tan(radians);
+      },
+      
       openModal(msg) {
         this.message = msg;
         this.isModalOpen = true;
